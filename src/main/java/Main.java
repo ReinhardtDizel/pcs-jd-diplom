@@ -1,13 +1,45 @@
-import java.io.File;
-import java.util.Arrays;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import org.apache.commons.lang3.StringUtils;
+import search.BooleanSearchEngine;
+import search.PageEntry;
+
+import java.io.*;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 public class Main {
-    public static void main(String[] args) throws Exception {
-        BooleanSearchEngine engine = new BooleanSearchEngine(new File("pdfs"));
-        System.out.println(engine.search("бизнес"));
+    public static void main(String[] args) {
 
-        // здесь создайте сервер, который отвечал бы на нужные запросы
-        // слушать он должен порт 8989
-        // отвечать на запросы /{word} -> возвращённое значение метода search(word) в JSON-формате
+        BooleanSearchEngine engine = new BooleanSearchEngine(new File("pdfs"));
+        while (true) {
+            try (ServerSocket serverSocket = new ServerSocket(8989);
+                 Socket clientSocket = serverSocket.accept();
+                 PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
+                 BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()))) {
+
+                System.out.println("New connection accepted");
+                String word = URLDecoder.decode(in.readLine(), StandardCharsets.UTF_8.name());
+
+                if (word.equals("0")) break;
+
+                List<PageEntry> searchResult = engine.search(word);
+                GsonBuilder builder = new GsonBuilder();
+                builder.setPrettyPrinting();
+                Gson gson = builder.create();
+
+                out.println("{" + word + "} ->");
+                for (PageEntry pe : searchResult) {
+                    out.println(gson.toJson(pe));
+                }
+
+            } catch (IOException exception) {
+                exception.printStackTrace();
+                break;
+            }
+        }
     }
 }
