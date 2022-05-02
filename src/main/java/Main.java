@@ -24,7 +24,7 @@ public class Main {
                     System.out.println("New connection accepted");
                     String word = URLDecoder.decode(in.readLine(), StandardCharsets.UTF_8.name());
 
-                    List<PageEntry> searchResult = engine.search(word);
+                    List<PageEntry> searchResult = engine.search(word.toLowerCase());
                     if (searchResult == null) {
                         break;
                     }
